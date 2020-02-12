@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>webSocket client</title>
+</head>
+<body>
+	<!-- форма для отправки сообщений -->
+	<form name="publish">
+	  <input type="submit" value="Отправить">
+	</form>
+	<form name="delete">
+	  <input type="submit" value="Очистить данные">
+	</form>
+
+	<!-- входящие сообщения -->
+	<div id="subscribe"></div>
+	<script type="text/javascript">
+		// создать подключение
+		var socket = new WebSocket("ws://localhost:8080"),
+			start = 0,
+			data = [];
+		if(localStorage.getItem('start') != null){
+			start = JSON.parse(localStorage.getItem('start'));
+		};
+		if(localStorage.getItem('data') != null){
+			data = JSON.parse(localStorage.getItem('data'));
+		};
+
+		document.forms.delete.onsubmit = function(){
+			localStorage.setItem('data', null);
+		  	localStorage.setItem('start', null);
+		  	data = [];
+		  	start = 0;
+		  	return false;
+		}
+
+		// отправить сообщение из формы publish
+		document.forms.publish.onsubmit = function() {
+		  socket.send(start);
+		  return false;
+		};
+
+		// обработчик входящих сообщений
+		socket.onmessage = function(event) {
+		  	var incomingMessage = event.data;
+		  	start++;
+		  	data.push(incomingMessage);
+		  	localStorage.setItem('data', JSON.stringify(data));
+		  	localStorage.setItem('start', JSON.stringify(start));
+	  		showMessage(incomingMessage);
+		};
+
+		socket.onclose = function(event) {
+			if (event.wasClean) {
+		    	alert('Соединение закрыто чисто');
+			} else {
+		    	alert('Обрыв соединения');
+			}
+			alert('Код: ' + event.code + ' причина: ' + event.reason);
+		};
+
+		// показать сообщение в div#subscribe
+		function showMessage(message) {
+		  var messageElem = document.createElement('div');
+		  messageElem.appendChild(document.createTextNode(message));
+		  document.getElementById('subscribe').appendChild(messageElem);
+		}
+	</script>
+</body>
+</html>
